@@ -147,7 +147,7 @@ NET START WazuhSvc
 **Kundan Vidhate**
 MS Cybersecurity — SRH Berlin University of Applied Sciences
 
-[!\[LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue)](your-linkedin-url)
+[!\[LinkedIn](https://www.linkedin.com/in/kundan-vidhate-3479833b1 )](your-linkedin-url)
 
 \---
 
