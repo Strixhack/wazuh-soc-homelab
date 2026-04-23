@@ -1,0 +1,63 @@
+<Sysmon schemaversion="4.90">
+<!--  Wazuh SOC Home Lab — Custom Sysmon Config  -->
+<!--  Author: Kundan Vidhate | SRH Berlin MS Cybersecurity  -->
+<!--  Captures: Process Create, Network, LSASS Access, Registry, File Create  -->
+<HashAlgorithms>md5,sha256,imphash</HashAlgorithms>
+<CheckRevocation>False</CheckRevocation>
+<EventFiltering>
+<!--  EID 1 — Process Creation — Log everything  -->
+<RuleGroup name="ProcessCreate" groupRelation="or">
+<ProcessCreate onmatch="exclude">
+<Image condition="is">C:\Windows\System32\conhost.exe</Image>
+</ProcessCreate>
+</RuleGroup>
+<!--  EID 3 — Network Connections — Log all except noisy system processes  -->
+<RuleGroup name="NetworkConnect" groupRelation="or">
+<NetworkConnect onmatch="exclude">
+<Image condition="is">C:\Windows\System32\svchost.exe</Image>
+</NetworkConnect>
+</RuleGroup>
+<!--  EID 7 — Image Load — Detect Mimikatz DLL loads  -->
+<RuleGroup name="ImageLoad" groupRelation="or">
+<ImageLoad onmatch="include">
+<ImageLoaded condition="contains">mimikatz</ImageLoaded>
+<ImageLoaded condition="contains">wce</ImageLoaded>
+</ImageLoad>
+</RuleGroup>
+<!--  EID 10 — Process Access — CRITICAL FOR MIMIKATZ DETECTION  -->
+<RuleGroup name="ProcessAccess" groupRelation="or">
+<ProcessAccess onmatch="include">
+<TargetImage condition="is">C:\Windows\system32\lsass.exe</TargetImage>
+<TargetImage condition="is">C:\Windows\SysWOW64\lsass.exe</TargetImage>
+</ProcessAccess>
+</RuleGroup>
+<!--  EID 11 — File Create — Monitor suspicious file types  -->
+<RuleGroup name="FileCreate" groupRelation="or">
+<FileCreate onmatch="include">
+<TargetFilename condition="contains">\Temp\</TargetFilename>
+<TargetFilename condition="contains">\Downloads\</TargetFilename>
+<TargetFilename condition="end with">.exe</TargetFilename>
+<TargetFilename condition="end with">.ps1</TargetFilename>
+<TargetFilename condition="end with">.bat</TargetFilename>
+<TargetFilename condition="end with">.vbs</TargetFilename>
+</FileCreate>
+</RuleGroup>
+<!--  EID 12/13 — Registry Events — FOR PERSISTENCE DETECTION  -->
+<RuleGroup name="RegistryEvent" groupRelation="or">
+<RegistryEvent onmatch="include">
+<TargetObject condition="contains">CurrentVersion\Run</TargetObject>
+<TargetObject condition="contains">CurrentVersion\RunOnce</TargetObject>
+<TargetObject condition="contains">Winlogon</TargetObject>
+<TargetObject condition="contains">Image File Execution Options</TargetObject>
+</RegistryEvent>
+</RuleGroup>
+<!--  EID 22 — DNS Query — Exclude common Microsoft domains  -->
+<RuleGroup name="DnsQuery" groupRelation="or">
+<DnsQuery onmatch="exclude">
+<QueryName condition="end with">microsoft.com</QueryName>
+<QueryName condition="end with">windows.com</QueryName>
+<QueryName condition="end with">windowsupdate.com</QueryName>
+</DnsQuery>
+</RuleGroup>
+</EventFiltering>
+</Sysmon>
