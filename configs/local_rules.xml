@@ -1,0 +1,131 @@
+<!-- Wazuh Custom Detection Rules — Wazuh SOC Home Lab -->
+<!-- Author: Kundan Vidhate | SRH Berlin MS Cybersecurity -->
+<!-- All rules mapped to MITRE ATT&CK Framework -->
+
+<group name="soc-lab-custom,">
+
+  <!-- ============================================ -->
+  <!-- ATTACK 2 — MIMIKATZ / LSASS ACCESS           -->
+  <!-- MITRE T1003.001 — LSASS Memory               -->
+  <!-- ============================================ -->
+  <rule id="100001" level="14">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.targetImage" type="pcre2">(?i)lsass\.exe</field>
+    <description>LSASS memory access detected - possible credential dumping T1003.001</description>
+    <mitre><id>T1003.001</id></mitre>
+  </rule>
+
+  <rule id="100002" level="14">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)mimikatz</field>
+    <description>Mimikatz execution detected - credential dumping tool T1003</description>
+    <mitre><id>T1003</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 3 — REVERSE SHELL / C2                -->
+  <!-- MITRE T1059.001 — PowerShell                 -->
+  <!-- ============================================ -->
+  <rule id="100003" level="12">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.destinationPort" type="pcre2">^(4444|5555|6666|7777|8888|9999)$</field>
+    <description>Suspicious outbound connection on non-standard port - possible C2 T1059.001</description>
+    <mitre><id>T1059.001</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 4 — POWERSHELL OBFUSCATION            -->
+  <!-- MITRE T1027 — Obfuscated Files               -->
+  <!-- ============================================ -->
+  <rule id="100004" level="12">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(-enc\b|-encodedcommand)</field>
+    <description>PowerShell encoded command detected - possible obfuscation T1027</description>
+    <mitre><id>T1027</id></mitre>
+  </rule>
+
+  <rule id="100005" level="12">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(invoke-expression|iex|downloadstring|net\.webclient)</field>
+    <description>PowerShell download cradle detected - possible fileless execution T1059.001</description>
+    <mitre><id>T1059.001</id></mitre>
+  </rule>
+
+  <rule id="100012" level="12">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID" type="pcre2">^4104$</field>
+    <field name="win.eventdata.scriptBlockText" type="pcre2">(?i)(encodedcommand|invoke-expression|downloadstring|iex\s)</field>
+    <description>Suspicious PowerShell script block logged EID 4104 - T1059.001</description>
+    <mitre><id>T1059.001</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 5 — PRIVILEGE ESCALATION              -->
+  <!-- MITRE T1548.002 — Bypass UAC                 -->
+  <!-- ============================================ -->
+  <rule id="100006" level="12">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)schtasks.*(\/create|\/run)</field>
+    <description>Scheduled task created - possible privilege escalation T1548.002</description>
+    <mitre><id>T1548.002</id></mitre>
+  </rule>
+
+  <rule id="100013" level="14">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID" type="pcre2">^4698$</field>
+    <description>Scheduled task created - Windows Security EID 4698 T1053.005</description>
+    <mitre><id>T1053.005</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 6 — REGISTRY PERSISTENCE              -->
+  <!-- MITRE T1547.001 — Registry Run Keys          -->
+  <!-- ============================================ -->
+  <rule id="100007" level="10">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)CurrentVersion\\Run</field>
+    <description>Registry Run key modified - persistence mechanism T1547.001</description>
+    <mitre><id>T1547.001</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 7 — NETWORK PORT SCANNING             -->
+  <!-- MITRE T1046 — Network Service Scanning       -->
+  <!-- ============================================ -->
+  <rule id="100008" level="10">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.initiated" type="pcre2">^false$</field>
+    <field name="win.eventdata.sourceIp" type="pcre2">192\.168\.56\.106</field>
+    <description>Inbound connection from Kali attacker - possible port scan T1046</description>
+    <mitre><id>T1046</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 9 — ACCOUNT DISCOVERY                 -->
+  <!-- MITRE T1087.001 — Local Account              -->
+  <!-- ============================================ -->
+  <rule id="100009" level="8">
+    <if_group>sysmon</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(net user|net localgroup|get-localuser|get-localgroup)</field>
+    <description>Local account enumeration detected - T1087.001</description>
+    <mitre><id>T1087.001</id></mitre>
+  </rule>
+
+  <!-- ============================================ -->
+  <!-- ATTACK 10 — EVENT LOG CLEARING               -->
+  <!-- MITRE T1070.001 — Clear Windows Event Logs   -->
+  <!-- ============================================ -->
+  <rule id="100010" level="14">
+    <if_group>windows</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)wevtutil.*(cl|clear)</field>
+    <description>Windows event log cleared - active defense evasion T1070.001</description>
+    <mitre><id>T1070.001</id></mitre>
+  </rule>
+
+  <rule id="100011" level="14">
+    <if_sid>60106</if_sid>
+    <description>Security audit log cleared - critical forensic evidence destroyed T1070.001</description>
+    <mitre><id>T1070.001</id></mitre>
+  </rule>
+
+</group>
