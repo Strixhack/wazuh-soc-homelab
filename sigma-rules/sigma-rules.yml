@@ -1,0 +1,173 @@
+# Sigma Rules — Wazuh SOC Home Lab
+# Author: Kundan Vidhate | SRH Berlin MS Cybersecurity
+# These Sigma rules mirror the custom Wazuh rules in local_rules.xml
+# Sigma is the vendor-neutral detection format used across SIEM platforms
+
+---
+
+# SIGMA RULE 1 — Mimikatz Execution
+title: Mimikatz Credential Dumping Tool Detected
+id: sigma-001-mimikatz
+status: stable
+description: Detects execution of Mimikatz credential dumping tool via process name match
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+author: Kundan Vidhate
+date: 2026/04/13
+tags:
+  - attack.credential_access
+  - attack.t1003.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|contains: 'mimikatz'
+  condition: selection
+falsepositives:
+  - Security testing tools in authorized red team exercises
+level: critical
+fields:
+  - Image
+  - CommandLine
+  - ParentImage
+  - Hashes
+
+---
+
+# SIGMA RULE 2 — LSASS Memory Access
+title: Suspicious LSASS Memory Access
+id: sigma-002-lsass-access
+status: stable
+description: Detects suspicious process access to lsass.exe — indicates credential dumping attempt
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+author: Kundan Vidhate
+date: 2026/04/13
+tags:
+  - attack.credential_access
+  - attack.t1003.001
+logsource:
+  category: process_access
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    TargetImage|endswith: '\lsass.exe'
+  filter_legitimate:
+    SourceImage|startswith:
+      - 'C:\Windows\System32\svchost.exe'
+      - 'C:\Windows\System32\wininit.exe'
+      - 'C:\Windows\System32\csrss.exe'
+  condition: selection and not filter_legitimate
+falsepositives:
+  - Antivirus software scanning LSASS
+  - Backup agents requiring memory access
+level: high
+fields:
+  - SourceImage
+  - TargetImage
+  - GrantedAccess
+
+---
+
+# SIGMA RULE 3 — PowerShell Encoded Command
+title: PowerShell Encoded Command Execution
+id: sigma-003-powershell-encoded
+status: stable
+description: Detects PowerShell execution with encoded command — common obfuscation technique
+references:
+  - https://attack.mitre.org/techniques/T1027/
+author: Kundan Vidhate
+date: 2026/04/13
+tags:
+  - attack.defense_evasion
+  - attack.t1027
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\powershell.exe'
+    CommandLine|contains:
+      - '-EncodedCommand'
+      - '-enc '
+      - '-EC '
+  condition: selection
+falsepositives:
+  - Legitimate software using encoded commands for installation
+  - System management tools
+level: medium
+fields:
+  - CommandLine
+  - ParentImage
+  - User
+
+---
+
+# SIGMA RULE 4 — Windows Event Log Cleared
+title: Windows Security Event Log Cleared
+id: sigma-004-log-cleared
+status: stable
+description: Detects clearing of Windows Security event log — active defense evasion and forensic destruction
+references:
+  - https://attack.mitre.org/techniques/T1070/001/
+author: Kundan Vidhate
+date: 2026/06/27
+tags:
+  - attack.defense_evasion
+  - attack.t1070.001
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 1102
+  condition: selection
+falsepositives:
+  - Legitimate log rotation by system administrators
+  - Scheduled maintenance tasks
+level: high
+fields:
+  - SubjectUserName
+  - SubjectDomainName
+
+---
+
+# SIGMA RULE 5 — Registry Run Key Persistence
+title: Registry Run Key Modification for Persistence
+id: sigma-005-registry-persistence
+status: stable
+description: Detects modification of registry Run keys used for persistence
+references:
+  - https://attack.mitre.org/techniques/T1547/001/
+author: Kundan Vidhate
+date: 2026/04/20
+tags:
+  - attack.persistence
+  - attack.t1547.001
+logsource:
+  category: registry_set
+  product: windows
+  service: sysmon
+detection:
+  selection:
+    TargetObject|contains:
+      - '\CurrentVersion\Run\'
+      - '\CurrentVersion\RunOnce\'
+  filter_legitimate:
+    Image|startswith:
+      - 'C:\Windows\System32\msiexec.exe'
+      - 'C:\Windows\SysWOW64\msiexec.exe'
+  condition: selection and not filter_legitimate
+falsepositives:
+  - Software installations adding legitimate autorun entries
+  - System management tools
+level: medium
+fields:
+  - TargetObject
+  - Details
+  - Image
+  - User
