@@ -9,9 +9,9 @@
 ![Detection](https://img.shields.io/badge/Detection_Rate-100%25-brightgreen?style=for-the-badge)
 ![Sigma](https://img.shields.io/badge/Sigma-Rules-orange?style=for-the-badge)
 
-**MS Cybersecurity Major Project | SRH Berlin University of Applied Sciences**
+**Self-Directed Project | SRH Berlin University of Applied Sciences**
 
-A production-grade Security Operations Center (SOC) home lab built to simulate, detect, and respond to real-world cyber attacks using Wazuh SIEM/XDR, Sysmon, and the MITRE ATT&CK framework.
+A fully self-built Security Operations Center (SOC) home lab built to simulate, detect, and respond to real-world cyber attacks using Wazuh SIEM/XDR, Sysmon, and the MITRE ATT&CK framework.
 
 *Built incrementally over 4 months (March–July 2026) as a solo project.*
 
